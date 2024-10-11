@@ -2,15 +2,58 @@ import { CopilotKit } from "@copilotkit/react-core";
 import { CopilotPopup } from "@copilotkit/react-ui";
 import "@copilotkit/react-ui/styles.css";
 import { extract } from "./actions/extract";
-import { ExtractView } from "./components/ExtractView";
+import { TextToJSON, TextToJSONProps } from "@/components/text-and-file-form";
+import { JSONSchemaType } from "ajv";
 export default function Home() {
-  const onExtract = async (text: string) => {
+  const onExtract: TextToJSONProps["extract"] = async ({
+    text,
+    files,
+    schema,
+  }) => {
     "use server";
-    return await extract(text);
+    return await extract({
+      text,
+      files,
+      schema: schema as JSONSchemaType<unknown>,
+    });
   };
   return (
     <CopilotKit runtimeUrl="/api/copilotkit">
-      <ExtractView extract={onExtract} />
+      <TextToJSON
+        extract={onExtract}
+        defaultSchema={{
+          type: "object",
+          properties: {
+            claimDate: { type: "string", format: "date" },
+            claimNumber: { type: "string" },
+            claimType: { type: "string" },
+            clainContentFirstname: {
+              type: "string",
+              description: "Often called 'correspondant'",
+            },
+            clainContentLastname: {
+              type: "string",
+              description: "Often called 'correspondant'",
+            },
+            clainContentPhone: {
+              type: "string",
+              description: "Often called 'correspondant'",
+            },
+            clainContentEmail: {
+              type: "string",
+              format: "email",
+              description: "Often called 'correspondant'",
+            },
+            policeNumber: { type: "string" },
+            addressStreet: { type: "string" },
+            addressNumber: { type: "string" },
+            addressLocality: { type: "string" },
+            addressLocalityPostalCode: { type: "string" },
+          },
+          required: [],
+          additionalProperties: false,
+        }}
+      />
 
       <CopilotPopup
         instructions={

@@ -1,25 +1,43 @@
 import { OpenAI } from "openai";
 import { JSONSchemaType } from "ajv";
+import { pdfToText } from "./pdf-to-text";
 
-interface ExtractOptions<T> {
+interface ExtractFile {
+  name: string;
+  type: string;
+  size: number;
+  content: string;
+}
+
+export interface ExtractOptions<T> {
   openai: OpenAI;
   text: string;
+  files: ExtractFile[];
   schema: JSONSchemaType<T>;
 }
 
 export async function extractDataFromText<T>({
   openai,
   text,
+  files,
   schema,
 }: ExtractOptions<T>): Promise<object> {
+  const fileContents = await Promise.all(
+    files
+      .filter((file) => file.type === "application/pdf")
+      .map((file) => pdfToText(file.content))
+  );
+
   const prompt = `
 Extract the following information from the given text according to this JSON schema:
 ${JSON.stringify(schema, null, 2)}
 
 Text:
 ${text}
+${fileContents ? fileContents.join("\n") : ""}
 
 Provide the extracted information as a valid JSON object.
+Most of time, the value is ended with a period, a comma, or a newline.
 `;
 
   const response = await openai.chat.completions.create({

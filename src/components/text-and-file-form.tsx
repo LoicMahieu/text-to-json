@@ -9,12 +9,26 @@ import { Loader2, AlertCircle } from "lucide-react";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB in bytes
 
-export default function Component({
-  extract,
-}: {
-  extract: (text: string) => object;
-}) {
-  const [inputText, setInputText] = useState("");
+export type TextToJSONProps = {
+  extract: (options: {
+    text: string;
+    files: Array<{
+      name: string;
+      type: string;
+      size: number;
+      content: string; // base64 encoded
+    }>;
+    schema?: object;
+  }) => object;
+  defaultSchema?: object;
+  defaultText?: string;
+};
+
+export function TextToJSON({ extract, defaultSchema, defaultText }: TextToJSONProps) {
+  const [inputText, setInputText] = useState(defaultText || "");
+  const [jsonSchema, setJsonSchema] = useState(
+    JSON.stringify(defaultSchema, null, 2) || ""
+  );
   const [jsonOutput, setJsonOutput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [files, setFiles] = useState<FileList | null>(null);
@@ -45,15 +59,48 @@ export default function Component({
     setIsLoading(true);
     setSizeError("");
 
-    const result = await extract(inputText.trim());
+    let parsedJsonSchema: object | undefined;
+    try {
+      parsedJsonSchema = jsonSchema ? JSON.parse(jsonSchema) : undefined;
+    } catch (error) {
+      console.error("Invalid JSON schema", error);
+      setSizeError("Invalid JSON schema");
+      setIsLoading(false);
+      return;
+    }
 
-    // Process files
-    if (files) {
-      result.files = Array.from(files).map((file) => ({
-        name: file.name,
-        type: file.type,
-        size: file.size,
-      }));
+
+    let result = {};
+    try {
+      parsedJsonSchema = jsonSchema ? JSON.parse(jsonSchema) : undefined;
+      result = await extract({
+        text: inputText.trim(),
+        files: files
+          ? await Promise.all(
+              Array.from(files).map(async (file) => {
+                const reader = new FileReader();
+                const content = await new Promise<string>((resolve) => {
+                  reader.onload = () => {
+                    resolve(reader.result as string);
+                  };
+                  reader.readAsDataURL(file);
+                });
+                return {
+                  name: file.name,
+                  type: file.type,
+                  size: file.size,
+                  content: content.replace(/^data:.+;base64,/, ""),
+                };
+              })
+            )
+          : [],
+        schema: parsedJsonSchema || {},
+      });
+    } catch (error) {
+      console.error("Error during extraction", error);
+      setSizeError("Error during extraction");
+      setIsLoading(false);
+      return;
     }
 
     setJsonOutput(JSON.stringify(result, null, 2));
@@ -63,12 +110,20 @@ export default function Component({
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-6">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Textarea
-          placeholder="Enter your long text here..."
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          className="min-h-[200px] text-base"
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Textarea
+            placeholder="Enter your long text here..."
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            className="min-h-[500px] text-base"
+          />
+          <Textarea
+            placeholder="Enter JSON schema here (optional)..."
+            value={jsonSchema}
+            onChange={(e) => setJsonSchema(e.target.value)}
+            className="min-h-[500px] text-base"
+          />
+        </div>
         <div>
           <Input
             ref={fileInputRef}
