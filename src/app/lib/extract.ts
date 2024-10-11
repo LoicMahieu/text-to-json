@@ -14,6 +14,7 @@ export interface ExtractOptions<T> {
   text: string;
   files: ExtractFile[];
   schema: JSONSchemaType<T>;
+  model?: string;
 }
 
 export async function extractDataFromText<T>({
@@ -21,6 +22,7 @@ export async function extractDataFromText<T>({
   text,
   files,
   schema,
+  model,
 }: ExtractOptions<T>): Promise<object> {
   const fileContents = await Promise.all(
     files
@@ -38,12 +40,17 @@ ${fileContents ? fileContents.join("\n") : ""}
 
 Provide the extracted information as a valid JSON object.
 Most of time, the value is ended with a period, a comma, or a newline.
+When a data is used for a key, it is mostly not used for another key.
 `;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-3.5-turbo-16k",
+    // model: "gpt-3.5-turbo-16k",
+    model: model || "gpt-4o",
     messages: [{ role: "user", content: prompt }],
     temperature: 0.2,
+    response_format: {
+      type: "json_object"
+    },
   });
 
   const content = response.choices[0].message.content;

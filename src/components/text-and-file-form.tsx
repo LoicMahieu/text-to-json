@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, AlertCircle } from "lucide-react";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB in bytes
@@ -19,12 +26,21 @@ export type TextToJSONProps = {
       content: string; // base64 encoded
     }>;
     schema?: object;
+    model?: string;
   }) => object;
   defaultSchema?: object;
   defaultText?: string;
+  models?: Array<{ value: string; label: string }>;
+  defaultModel?: string;
 };
 
-export function TextToJSON({ extract, defaultSchema, defaultText }: TextToJSONProps) {
+export function TextToJSON({
+  extract,
+  defaultSchema,
+  defaultText,
+  models,
+  defaultModel,
+}: TextToJSONProps) {
   const [inputText, setInputText] = useState(defaultText || "");
   const [jsonSchema, setJsonSchema] = useState(
     JSON.stringify(defaultSchema, null, 2) || ""
@@ -33,6 +49,7 @@ export function TextToJSON({ extract, defaultSchema, defaultText }: TextToJSONPr
   const [isLoading, setIsLoading] = useState(false);
   const [files, setFiles] = useState<FileList | null>(null);
   const [sizeError, setSizeError] = useState("");
+  const [model, setModel] = useState(defaultModel || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,7 +86,6 @@ export function TextToJSON({ extract, defaultSchema, defaultText }: TextToJSONPr
       return;
     }
 
-
     let result = {};
     try {
       parsedJsonSchema = jsonSchema ? JSON.parse(jsonSchema) : undefined;
@@ -95,6 +111,7 @@ export function TextToJSON({ extract, defaultSchema, defaultText }: TextToJSONPr
             )
           : [],
         schema: parsedJsonSchema || {},
+        model: model,
       });
     } catch (error) {
       console.error("Error during extraction", error);
@@ -142,6 +159,18 @@ export function TextToJSON({ extract, defaultSchema, defaultText }: TextToJSONPr
             <AlertDescription>{sizeError}</AlertDescription>
           </Alert>
         )}
+        <Select value={model} onValueChange={setModel}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select AI Model" />
+          </SelectTrigger>
+          <SelectContent>
+            {models?.map((model) => (
+              <SelectItem key={model.value} value={model.value}>
+                {model.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button
           type="submit"
           className="w-full h-12 text-lg"
