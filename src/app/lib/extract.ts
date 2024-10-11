@@ -9,6 +9,13 @@ interface ExtractFile {
   content: string;
 }
 
+const tokenPricePerModel = {
+  // gpt-4o $2.50 / 1M input tokens
+  "gpt-4o": 0.0000025,
+
+  "gpt-3.5-turbo-16k": 0.0000025,
+};
+
 export interface ExtractOptions<T> {
   openai: OpenAI;
   text: string;
@@ -23,7 +30,11 @@ export async function extractDataFromText<T>({
   files,
   schema,
   model,
-}: ExtractOptions<T>): Promise<object> {
+}: ExtractOptions<T>): Promise<{
+  result: object;
+  tokensUsed: number;
+  tokensPrice: number;
+}> {
   const fileContents = await Promise.all(
     files
       .filter((file) => file.type === "application/pdf")
@@ -48,9 +59,12 @@ When a data is used for a key, it is mostly not used for another key.
     model: model || "gpt-4o",
     messages: [{ role: "user", content: prompt }],
     temperature: 0.2,
-    response_format: {
-      type: "json_object"
-    },
+    response_format:
+      model === "gpt-4o"
+        ? {
+            type: "json_object",
+          }
+        : undefined,
   });
 
   const content = response.choices[0].message.content;
@@ -61,7 +75,15 @@ When a data is used for a key, it is mostly not used for another key.
 
   try {
     const extractedData = JSON.parse(content);
-    return extractedData;
+    return {
+      result: extractedData,
+      tokensUsed: response.usage?.total_tokens || 0,
+      tokensPrice:
+        (tokenPricePerModel[
+          (model as keyof typeof tokenPricePerModel) || "gpt-4o"
+        ] || tokenPricePerModel["gpt-4o"]) *
+        (response.usage?.total_tokens || 0),
+    };
   } catch (error) {
     throw new Error("Failed to parse extracted data as JSON", error as Error);
   }

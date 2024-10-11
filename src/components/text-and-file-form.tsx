@@ -16,6 +16,11 @@ import { Loader2, AlertCircle } from "lucide-react";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB in bytes
 
+type ExtractResult = {
+  result: object;
+  tokensUsed: number;
+  tokensPrice: number;
+};
 export type TextToJSONProps = {
   extract: (options: {
     text: string;
@@ -27,7 +32,7 @@ export type TextToJSONProps = {
     }>;
     schema?: object;
     model?: string;
-  }) => object;
+  }) => Promise<ExtractResult>;
   defaultSchema?: object;
   defaultText?: string;
   models?: Array<{ value: string; label: string }>;
@@ -45,7 +50,7 @@ export function TextToJSON({
   const [jsonSchema, setJsonSchema] = useState(
     JSON.stringify(defaultSchema, null, 2) || ""
   );
-  const [jsonOutput, setJsonOutput] = useState("");
+  const [result, setResult] = useState<undefined | ExtractResult>();
   const [isLoading, setIsLoading] = useState(false);
   const [files, setFiles] = useState<FileList | null>(null);
   const [sizeError, setSizeError] = useState("");
@@ -86,10 +91,9 @@ export function TextToJSON({
       return;
     }
 
-    let result = {};
     try {
       parsedJsonSchema = jsonSchema ? JSON.parse(jsonSchema) : undefined;
-      result = await extract({
+      const result = await extract({
         text: inputText.trim(),
         files: files
           ? await Promise.all(
@@ -113,15 +117,14 @@ export function TextToJSON({
         schema: parsedJsonSchema || {},
         model: model,
       });
+
+      setResult(result);
     } catch (error) {
       console.error("Error during extraction", error);
       setSizeError("Error during extraction");
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    setJsonOutput(JSON.stringify(result, null, 2));
-    setIsLoading(false);
   };
 
   return (
@@ -187,12 +190,21 @@ export function TextToJSON({
         </Button>
       </form>
 
-      {jsonOutput && (
-        <div className="mt-6">
+      {result && (
+        <div className="mt-6 space-y-4">
           <h2 className="text-xl font-semibold mb-2">Extracted JSON:</h2>
           <pre className="bg-muted p-4 rounded-lg overflow-x-auto">
-            <code>{jsonOutput}</code>
+            <code>{JSON.stringify(result.result, null, 2)}</code>
           </pre>
+          <div className="bg-muted p-4 rounded-lg">
+            <p className="font-semibold">Tokens Used: {result.tokensUsed}</p>
+            <p className="font-semibold">
+              Price: ${result.tokensPrice.toFixed(6)} USD
+            </p>
+            <p className="font-semibold">
+              Price for 100x: ${(result.tokensPrice * 100).toFixed(2)} USD
+            </p>
+          </div>
         </div>
       )}
     </div>

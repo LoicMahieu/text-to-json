@@ -42,22 +42,15 @@ export default function Home() {
             description: "Often a number with a / or -",
           },
           claimType: { type: "string" },
-          claimContactFirstname: {
-            type: "string",
+          contact: {
+            type: "object",
             description: "Often called 'correspondant'",
-          },
-          claimContactLastname: {
-            type: "string",
-            description: "Often called 'correspondant'",
-          },
-          claimContactPhone: {
-            type: "string",
-            description: "Often called 'correspondant'",
-          },
-          claimContactEmail: {
-            type: "string",
-            format: "email",
-            description: "Often called 'correspondant'",
+            properties: {
+              firstname: { type: "string" },
+              lastname: { type: "string" },
+              phone: { type: "string" },
+              email: { type: "string", format: "email" },
+            },
           },
           policeNumber: { type: "string" },
           address: {
@@ -67,15 +60,19 @@ export default function Home() {
                 But if the document looks like a formal letter, it is not this address in the header.
               `.replace(/\s+/g, " "),
           },
-          insuredFirstname: { type: "string" },
-          insuredLastname: { type: "string" },
-          insuredPhone: { type: "string" },
-          insuredEmail: { type: "string", format: "email" },
-          insuredAddressStreet: { type: "string" },
-          insuredAddressNumber: { type: "string" },
-          insuredAddressLocality: { type: "string" },
-          insuredAddressLocalityPostalCode: { type: "string" },
-          insuredInsuranceCompany: { type: "string" },
+          insured: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                firstname: { type: "string" },
+                lastname: { type: "string" },
+                phone: { type: "string" },
+                email: { type: "string", format: "email" },
+                address: addressSchema,
+              },
+            },
+          },
           thirdparties: {
             type: "array",
             items: {
