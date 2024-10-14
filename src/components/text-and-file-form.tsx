@@ -21,6 +21,7 @@ type ExtractResult = {
   tokensUsed: number;
   tokensPrice: number;
 };
+
 export type TextToJSONProps = {
   extract: (options: {
     text: string;
@@ -32,11 +33,13 @@ export type TextToJSONProps = {
     }>;
     schema?: object;
     model?: string;
+    prompt: string;
   }) => Promise<ExtractResult>;
   defaultSchema?: object;
   defaultText?: string;
   models?: Array<{ value: string; label: string }>;
   defaultModel?: string;
+  defaultPrompt?: string;
 };
 
 export function TextToJSON({
@@ -45,16 +48,19 @@ export function TextToJSON({
   defaultText,
   models,
   defaultModel,
+  defaultPrompt,
 }: TextToJSONProps) {
   const [inputText, setInputText] = useState(defaultText || "");
   const [jsonSchema, setJsonSchema] = useState(
     JSON.stringify(defaultSchema, null, 2) || ""
   );
+  const [prompt, setPrompt] = useState(defaultPrompt || "");
   const [result, setResult] = useState<undefined | ExtractResult>();
   const [isLoading, setIsLoading] = useState(false);
   const [files, setFiles] = useState<FileList | null>(null);
   const [sizeError, setSizeError] = useState("");
   const [model, setModel] = useState(defaultModel || "");
+  const [showPrompt, setShowPrompt] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,6 +122,7 @@ export function TextToJSON({
           : [],
         schema: parsedJsonSchema || {},
         model: model,
+        prompt: prompt,
       });
 
       setResult(result);
@@ -128,7 +135,7 @@ export function TextToJSON({
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-4 space-y-6">
+    <div className="mx-auto p-4 space-y-6">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Textarea
@@ -174,6 +181,24 @@ export function TextToJSON({
             ))}
           </SelectContent>
         </Select>
+        <div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowPrompt(!showPrompt)}
+            className="mb-2"
+          >
+            {showPrompt ? "Hide Prompt Template" : "Show Prompt Template"}
+          </Button>
+          {showPrompt && (
+            <Textarea
+              placeholder="Enter prompt template here..."
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              className="min-h-[200px] text-base"
+            />
+          )}
+        </div>
         <Button
           type="submit"
           className="w-full h-12 text-lg"

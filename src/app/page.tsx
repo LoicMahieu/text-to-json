@@ -1,20 +1,10 @@
 import { extract } from "./actions/extract";
 import { TextToJSON, TextToJSONProps } from "@/components/text-and-file-form";
-import { JSONSchemaType } from "ajv";
 export default function Home() {
-  const onExtract: TextToJSONProps["extract"] = async ({
-    text,
-    files,
-    schema,
-    model,
-  }) => {
+  const onExtract: TextToJSONProps["extract"] = async (options) => {
     "use server";
-    return await extract({
-      text,
-      files,
-      schema: schema as JSONSchemaType<unknown>,
-      model,
-    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return await extract<any>(options as any);
   };
   const addressSchema = {
     type: "object",
@@ -33,6 +23,10 @@ export default function Home() {
         { value: "gpt-3.5-turbo-16k", label: "GPT-3.5-turbo-16k" },
       ]}
       defaultModel="gpt-4o"
+      defaultPrompt={`
+Most of time, the value is ended with a period, a comma, or a newline.
+When a data is used for a key, it is mostly not used for another key.
+`.trim()}
       defaultSchema={{
         type: "object",
         properties: {
@@ -42,6 +36,7 @@ export default function Home() {
             description: "Often a number with a / or -",
           },
           claimType: { type: "string" },
+          contractNumber: { type: "string" },
           contact: {
             type: "object",
             description: "Often called 'correspondant'",
@@ -56,21 +51,26 @@ export default function Home() {
           address: {
             ...addressSchema,
             description: `
-                Often called 'incident address' or 'sinister address'.
-                But if the document looks like a formal letter, it is not this address in the header.
-              `.replace(/\s+/g, " "),
+Often called 'incident address' or 'sinister address'.
+But if the document looks like a formal letter, it is not this address in the header.
+`.trim(),
+          },
+          broker: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              phone: { type: "string" },
+              email: { type: "string", format: "email" },
+            },
           },
           insured: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                firstname: { type: "string" },
-                lastname: { type: "string" },
-                phone: { type: "string" },
-                email: { type: "string", format: "email" },
-                address: addressSchema,
-              },
+            type: "object",
+            properties: {
+              firstname: { type: "string" },
+              lastname: { type: "string" },
+              phone: { type: "string" },
+              email: { type: "string", format: "email" },
+              address: addressSchema,
             },
           },
           thirdparties: {
