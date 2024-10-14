@@ -25,6 +25,21 @@ const tokenPricePerModel = {
   },
 };
 
+export const extractDataFromTextBasePrompt = `
+Extract the following information from the given text according to this JSON schema:
+{schema}
+
+Text:
+"""
+{text}
+"""
+
+Most of time, the value is ended with a period, a comma, or a newline.
+When a data is used for a key, it is mostly not used for another key.
+
+Provide the extracted information as a valid JSON object.
+`.trim();
+
 export interface ExtractOptions<T> {
   openai: OpenAI;
   text: string;
@@ -40,7 +55,7 @@ export async function extractDataFromText<T>({
   files,
   schema,
   model,
-  prompt: promptUser,
+  prompt = extractDataFromTextBasePrompt,
 }: ExtractOptions<T>): Promise<{
   result: T;
   tokensUsed: number;
@@ -52,23 +67,20 @@ export async function extractDataFromText<T>({
       .map((file) => pdfToText(file.content))
   );
 
-  const prompt = `
-Extract the following information from the given text according to this JSON schema:
-${JSON.stringify(schema, null, 2)}
-
-Text:
+  const finalPrompt = prompt
+    .replace("{schema}", JSON.stringify(schema, null, 2))
+    .replace(
+      "{text}",
+      `
 ${text}
 ${fileContents ? fileContents.join("\n") : ""}
-
-${promptUser || ""}
-
-Provide the extracted information as a valid JSON object.
-`;
+`
+    );
 
   const response = await openai.chat.completions.create({
     // model: "gpt-3.5-turbo-16k",
     model: model || "gpt-4o",
-    messages: [{ role: "user", content: prompt }],
+    messages: [{ role: "user", content: finalPrompt }],
     temperature: 0.2,
     response_format:
       model === "gpt-4o"

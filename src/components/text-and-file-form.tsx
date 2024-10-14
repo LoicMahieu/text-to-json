@@ -60,7 +60,7 @@ export function TextToJSON({
   const [files, setFiles] = useState<FileList | null>(null);
   const [sizeError, setSizeError] = useState("");
   const [model, setModel] = useState(defaultModel || "");
-  const [showPrompt, setShowPrompt] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,13 +142,13 @@ export function TextToJSON({
             placeholder="Enter your long text here..."
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            className="min-h-[500px] text-base"
+            className="min-h-[80vh] text-base"
           />
           <Textarea
             placeholder="Enter JSON schema here (optional)..."
             value={jsonSchema}
             onChange={(e) => setJsonSchema(e.target.value)}
-            className="min-h-[500px] text-base"
+            className="min-h-[80vh] text-base"
           />
         </div>
         <div>
@@ -169,34 +169,36 @@ export function TextToJSON({
             <AlertDescription>{sizeError}</AlertDescription>
           </Alert>
         )}
-        <Select value={model} onValueChange={setModel}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select AI Model" />
-          </SelectTrigger>
-          <SelectContent>
-            {models?.map((model) => (
-              <SelectItem key={model.value} value={model.value}>
-                {model.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <div>
           <Button
             type="button"
             variant="outline"
-            onClick={() => setShowPrompt(!showPrompt)}
+            onClick={() => setShowAdvanced(!showAdvanced)}
             className="mb-2"
           >
-            {showPrompt ? "Hide Prompt Template" : "Show Prompt Template"}
+            {showAdvanced ? "Hide advanced settings" : "Show advanced settings"}
           </Button>
-          {showPrompt && (
-            <Textarea
-              placeholder="Enter prompt template here..."
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              className="min-h-[200px] text-base"
-            />
+          {showAdvanced && (
+            <>
+              <Select value={model} onValueChange={setModel}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select AI Model" />
+                </SelectTrigger>
+                <SelectContent>
+                  {models?.map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      {model.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Textarea
+                placeholder="Enter prompt template here..."
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                className="min-h-[200px] text-base mt-4"
+              />
+            </>
           )}
         </div>
         <Button

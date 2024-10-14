@@ -1,5 +1,6 @@
 import { extract } from "./actions/extract";
 import { TextToJSON, TextToJSONProps } from "@/components/text-and-file-form";
+import { extractDataFromTextBasePrompt } from "./lib/extract";
 export default function Home() {
   const onExtract: TextToJSONProps["extract"] = async (options) => {
     "use server";
@@ -23,10 +24,7 @@ export default function Home() {
         { value: "gpt-3.5-turbo-16k", label: "GPT-3.5-turbo-16k" },
       ]}
       defaultModel="gpt-4o"
-      defaultPrompt={`
-Most of time, the value is ended with a period, a comma, or a newline.
-When a data is used for a key, it is mostly not used for another key.
-`.trim()}
+      defaultPrompt={extractDataFromTextBasePrompt}
       defaultSchema={{
         type: "object",
         properties: {
